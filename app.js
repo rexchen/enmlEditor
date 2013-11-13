@@ -5,6 +5,7 @@
 
 var express = require('express');
 var routes = require('./routes');
+var note = require('./routes/notes');
 var http = require('http');
 var path = require('path');
 var compass = require('node-compass');
@@ -32,6 +33,19 @@ if ('development' == app.get('env')) {
 }
 
 app.get('/', routes.index);
+app.get('/oauth', routes.oauth);
+app.get('/oauth_callback', routes.oauth_callback);
+app.get('/logout', routes.logout);
+
+app.get('/notes', note.listNotes);
+app.get('/notes/new', note.newNote);
+app.post('/notes', note.createNote);
+app.get('/notes/:id', note.showNote);
+app.get('/notes/:id/edit', note.editNote);
+//app.put('/notes/:id', note.updateNote);
+app.post('/notes/:id', note.updateNote);
+//app.delete('/notes/:id', note.deleteNote);
+app.get('/notes/:id/delete', note.deleteNote);
 
 http.createServer(app).listen(app.get('port'), function(){
   console.log('Express server listening on port ' + app.get('port'));

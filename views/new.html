@@ -1,0 +1,8 @@
+<form name="myForm" ng-controller="EditorCtrl" method="post" action="/notes">
+    <div class="control-group">
+        <input type="text" name="title" class="form-control" placeholder="Note Title">
+    </div>
+    <textarea class="editor" name="content">{{content}}</textarea>
+    <a href="/notes" class="btn btn-default">Cancel</a>
+    <input class="btn btn-primary" value="Save" type="submit">
+</form>

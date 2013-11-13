@@ -1,0 +1,7 @@
+{
+    "name": "EnmlEditor",
+    "version": "1.0.0",
+    "dependencies": {
+        "bootstrap": "*"
+    }
+}
