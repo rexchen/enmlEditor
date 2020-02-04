@@ -1,4 +1,4 @@
-var Evernote = require('evernote').Evernote;
+var Evernote = require('evernote');
 var config = require('../config.json');
 var isProduction = (process.env.NODE_ENV === 'production');
 var port = process.env.PORT || 3000;
@@ -12,14 +12,14 @@ exports.listNotes = function(req, res) {
     var noteStore = client.getNoteStore();
 
     var notes = [];
-    var filter = new Evernote.NoteFilter();
+    var filter = new Evernote.NoteStore.NoteFilter();
     filter.notebookGuid = req.session.slideNotebook.guid;
     filter.order = 2; //sort by UPDATED time
     var offset = 0;
-    var spec = new Evernote.NotesMetadataResultSpec();
+    var spec = new Evernote.NoteStore.NotesMetadataResultSpec();
     spec.includeTitle = true;
-    
-    noteStore.findNotesMetadata(filter, offset, 20, spec, function(err, response){
+
+    noteStore.findNotesMetadata(filter, offset, 20, spec).then(function(response){
         var notesList = response.notes;
         console.log(notesList);
 
@@ -34,6 +34,8 @@ exports.listNotes = function(req, res) {
             title: 'ENML Editor: Note List',
             notes: notes
         });
+    }).catch(function(err){
+        console.log("Error in findNotesMetadata: "+JSON.stringify(err));
     });
 };
 
@@ -63,13 +65,15 @@ exports.createNote = function(req, res) {
     });
     var noteStore = client.getNoteStore();
 
-    var note = new Evernote.Note();
+    var note = new Evernote.Types.Note();
     note.title = data.title;
     note.content = data.content;
     note.notebookGuid = req.session.slideNotebook.guid;
 
-    noteStore.createNote(note, function(err, note){
+    noteStore.createNote(note).then(function(note){
         res.redirect('/notes');
+    }).catch(function(err) {
+        console.log("Error in createNote: "+ JSON.stringify(err));
     });
 };
 
@@ -82,12 +86,14 @@ exports.showNote = function(req, res) {
     var noteStore = client.getNoteStore();
     var guid = req.params.id;
 
-    noteStore.getNote(guid, true, false, false, false, function(err, note){
+    noteStore.getNote(guid, true, false, false, false).then( function(note){
         res.render('show', {
             layout: 'layouts/layout',
             title: note.title,
             note: note
         });
+    }).catch(function(err) {
+        console.log("Error in showNote: "+ JSON.stringify(err));
     });
 };
 
@@ -100,12 +106,14 @@ exports.editNote = function(req, res) {
     var noteStore = client.getNoteStore();
     var guid = req.params.id;
 
-    noteStore.getNote(guid, true, false, false, false, function(err, note){
+    noteStore.getNote(guid, true, false, false, false).then(function(note){
         res.render('edit', {
             layout: 'layouts/layout',
             title: note.title,
             note: note
         });
+    }).catch(function(err) {
+        console.log("Error in editNote: "+ JSON.stringify(err));
     });
 };
 
@@ -122,12 +130,16 @@ exports.updateNote = function(req, res) {
     var noteStore = client.getNoteStore();
     var guid = req.params.id;
 
-    noteStore.getNote(guid, true, false, false, false, function(err, note){
+    noteStore.getNote(guid, true, false, false, false).then(function(note){
         note.title = data.title;
         note.content = data.content
-        noteStore.updateNote(note, function(err, note){
+        noteStore.updateNote(note).then(function(note){
             res.redirect('/notes');
+        }).catch(function(err) {
+            console.log("Error in updateNote redirect: "+ JSON.stringify(err));
         });
+    }).catch(function(err) {
+        console.log("Error in updateNote: "+ JSON.stringify(err));
     });
 };
 
@@ -141,10 +153,14 @@ exports.deleteNote = function(req, res) {
     var noteStore = client.getNoteStore();
     var guid = req.params.id;
 
-    noteStore.getNote(guid, true, false, false, false, function(err, note){
+    noteStore.getNote(guid, true, false, false, false).then(function(note){
         note.active = false;
-        noteStore.updateNote(note, function(err, note){
+        noteStore.updateNote(note).then(function(note){
             res.redirect('/notes');
+        }).catch(function(err) {
+            console.log("Error in updateNote redirect 2: "+ JSON.stringify(err));
         });
+    }).catch(function(err) {
+        console.log("Error in deleteNote: "+ JSON.stringify(err));
     });
 };
