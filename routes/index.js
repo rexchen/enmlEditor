@@ -1,4 +1,4 @@
-var Evernote = require('evernote').Evernote;
+var Evernote = require('evernote');
 var config = require('../config.json');
 var isProduction = (process.env.NODE_ENV === 'production');
 var port = process.env.PORT || 3000;
@@ -24,7 +24,7 @@ exports.oauth = function(req, res) {
             req.session.error = JSON.stringify(error);
             res.redirect('/');
         }
-        else { 
+        else {
             // store the tokens in the session
             req.session.oauthToken = oauthToken;
             req.session.oauthTokenSecret = oauthTokenSecret;
@@ -34,7 +34,7 @@ exports.oauth = function(req, res) {
         }
     });
 };
- 
+
 // OAuth callback
 exports.oauth_callback = function(req, res) {
     var client = new Evernote.Client({
@@ -44,9 +44,9 @@ exports.oauth_callback = function(req, res) {
     });
 
     client.getAccessToken(
-        req.session.oauthToken, 
-        req.session.oauthTokenSecret, 
-        req.param('oauth_verifier'), 
+        req.session.oauthToken,
+        req.session.oauthTokenSecret,
+        req.param('oauth_verifier'),
         function(error, oauthAccessToken, oauthAccessTokenSecret, results) {
             if(error) {
                 console.log('error');
@@ -61,30 +61,32 @@ exports.oauth_callback = function(req, res) {
                 });
                 var noteStore = client.getNoteStore();
                 var slideNotebook = '';
-                noteStore.listNotebooks(function(err, notebooks){
+                noteStore.listNotebooks().then(function(notebooks){
                     for(var i in notebooks){
-                        console.log(notebooks[i].name);
+                        console.log("Notebook: "+notebooks[i].name);
                         if(notebooks[i].name == config.NOTEBOOK_NAME){
                             slideNotebook = notebooks[i];
                         }
                     }
                     if(!slideNotebook){
                         console.log('create notebook');
-                        slideNotebook = new Evernote.Notebook();
+                        slideNotebook = new Evernote.Types.Notebook();
                         slideNotebook.name = config.NOTEBOOK_NAME;
-                        noteStore.createNotebook(slideNotebook, function(err, createdNotebook) {
+                        noteStore.createNotebook(slideNotebook).then(function(createdNotebook) {
                             console.log(createdNotebook);
                             req.session.slideNotebook = createdNotebook;
 
                             // store the access token in the session
                             req.session.oauthAccessToken = oauthAccessToken;
-                            req.session.oauthAccessTtokenSecret = oauthAccessTokenSecret;
+                            req.session.oauthAccessTokenSecret = oauthAccessTokenSecret;
                             req.session.edamShard = results.edam_shard;
                             req.session.edamUserId = results.edam_userId;
                             req.session.edamExpires = results.edam_expires;
                             req.session.edamNoteStoreUrl = results.edam_noteStoreUrl;
                             req.session.edamWebApiUrlPrefix = results.edam_webApiUrlPrefix;
                             res.redirect('/notes');
+                        }).catch(function(err) {
+                            console.log("Error creating notebook: "+JSON.stringify(err));
                         });
                     }
                     else{
@@ -94,7 +96,7 @@ exports.oauth_callback = function(req, res) {
 
                         // store the access token in the session
                         req.session.oauthAccessToken = oauthAccessToken;
-                        req.session.oauthAccessTtokenSecret = oauthAccessTokenSecret;
+                        req.session.oauthAccessTokenSecret = oauthAccessTokenSecret;
                         req.session.edamShard = results.edam_shard;
                         req.session.edamUserId = results.edam_userId;
                         req.session.edamExpires = results.edam_expires;
@@ -102,12 +104,14 @@ exports.oauth_callback = function(req, res) {
                         req.session.edamWebApiUrlPrefix = results.edam_webApiUrlPrefix;
                         res.redirect('/notes');
                     }
+                }).catch(function(err) {
+                    console.log("Error listing notebooks: "+JSON.stringify(err));
                 });
             }
         }
     );
 };
- 
+
 // Clear session
 exports.logout = function(req, res) {
     req.session.destroy();
